@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Consultant View - Company Assessment</title>
+  <title>Company Assessment Form</title>
   <style>
     :root {
       --primary: #0056b3;
@@ -30,7 +30,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.08);
     }
 
-    /* Tab Navigation */
     .step-indicator {
       display: flex;
       border-bottom: 2px solid var(--border-color);
@@ -53,7 +52,6 @@
       border-bottom-color: var(--primary);
     }
 
-    /* Tab Content Panels */
     .wizard-step {
       display: none;
     }
@@ -62,7 +60,6 @@
       display: block;
     }
 
-    /* Forms & Layout */
     .row {
       display: flex;
       gap: 15px;
@@ -95,7 +92,7 @@
       resize: vertical;
     }
 
-    h2, h3, h4 {
+    h2, h3 {
       color: var(--primary);
       margin-top: 0;
     }
@@ -106,7 +103,6 @@
       margin: 20px 0;
     }
 
-    /* Consultant Tag Styling */
     .consultant-tag-container {
       display: flex;
       flex-wrap: wrap;
@@ -132,7 +128,6 @@
       font-weight: bold;
     }
 
-    /* Buttons */
     button {
       background-color: var(--primary);
       color: white;
@@ -164,7 +159,6 @@
       background-color: #218838;
     }
 
-    /* KRA Score Table */
     .score-table {
       width: 100%;
       border-collapse: collapse;
@@ -181,37 +175,73 @@
       background-color: #e9ecef;
     }
 
-    .score-input {
-      width: 80px;
+    /* Checkbox Container Styling */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+      background: #f8f9fa;
+      padding: 15px;
+      border: 1px solid var(--border-color);
+      border-radius: 5px;
+      max-height: 220px;
+      overflow-y: auto;
     }
 
-    select[multiple] {
-      height: 140px;
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .dept-score-card {
+      background: #eef6ff;
+      border-left: 4px solid var(--primary);
+      padding: 12px 18px;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .dept-score-badge {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--primary);
     }
   </style>
 </head>
 <body>
 
-<div class="container" id="assessmentWizardContainer">
+<div class="container">
   <h2>Company Assessment Form</h2>
   
-  <!-- Step Navigation Header -->
   <div class="step-indicator">
     <span id="nav-step1" class="active" onclick="switchTab(1)">1. About Business & Meta</span>
     <span id="nav-step2" onclick="switchTab(2)">2. Assessment Report</span>
     <span id="nav-step3" onclick="switchTab(3)">3. SWOC</span>
     <span id="nav-step4" onclick="switchTab(4)">4. KRA/KPA Scoring</span>
-    <span id="nav-step5" onclick="switchTab(5)">5. Recommendations</span>
+    <span id="nav-step5" onclick="switchTab(5)">5. Recommendations & Summary</span>
   </div>
 
   <input type="hidden" id="activeLeadId" value="">
 
-  <!-- TAB 1: About the Business & Company Assessment -->
+  <!-- TAB 1 -->
   <div id="step1" class="wizard-step active">
     <h3>About the Business</h3>
     <div class="row">
       <div class="col">
-        <label>Business Name / Company Name</label>
+        <label>Company Name</label>
         <input type="text" id="companyName" placeholder="Enter company name">
       </div>
       <div class="col">
@@ -224,7 +254,7 @@
       </div>
       <div class="col">
         <label>Business Sector</label>
-        <input type="text" id="bizSector" placeholder="e.g. Textile, IT, Automotive">
+        <input type="text" id="bizSector" placeholder="e.g. Textile, IT, Auto">
       </div>
     </div>
 
@@ -260,7 +290,7 @@
         <input type="number" id="countTop" value="0" min="0">
       </div>
       <div class="col">
-        <label>Middle Line / Supervisors / Senior Execs</label>
+        <label>Middle Line Supervisors</label>
         <input type="number" id="countMid" value="0" min="0">
       </div>
     </div>
@@ -270,7 +300,7 @@
         <input type="number" id="countBottom" value="0" min="0">
       </div>
       <div class="col">
-        <label>Contractors / Labour / Assistants</label>
+        <label>Contractors / Labour</label>
         <input type="number" id="countLabor" value="0" min="0">
       </div>
     </div>
@@ -279,8 +309,8 @@
     <h3>About the Company Assessment</h3>
     <div class="row">
       <div class="col">
-        <label>Why this Up? (Bullet Points)</label>
-        <textarea id="whyThisUp" rows="4" placeholder="• Type points in bullets here...&#10;• Second reason..."></textarea>
+        <label>Why this Up? (Bulleted Text Box)</label>
+        <textarea id="whyThisUp" rows="4" placeholder="• Bullet point 1&#10;• Bullet point 2"></textarea>
       </div>
     </div>
 
@@ -338,13 +368,10 @@
 
     <div class="row">
       <div class="col">
-        <label>Methodology & Approach</label>
-        <select id="methodologyApproach">
-          <option value="Interview & Data Analysis">Interview & Data Analysis</option>
-          <option value="On-Site Observation">On-Site Observation</option>
-          <option value="Survey & Document Review">Survey & Document Review</option>
-          <option value="Comprehensive Audit">Comprehensive Audit</option>
-        </select>
+        <label>Methodology & Approach (Check all applied parameters)</label>
+        <div id="methodologyCheckboxContainer" class="checkbox-grid">
+          <span style="color: #6c757d;">Loading Methodology items...</span>
+        </div>
       </div>
     </div>
 
@@ -354,19 +381,21 @@
     </div>
   </div>
 
-  <!-- TAB 3: SWOC -->
+  <!-- TAB 3: SWOC Checkbox Multiple Selection -->
   <div id="step3" class="wizard-step">
     <h3>SWOC Analysis</h3>
     <div class="row">
       <div class="col">
-        <label>Strengths (Loaded from SWOC_Mapping Sheet)</label>
-        <select id="swocStrengths" multiple></select>
-        <small style="color:#6c757d;">Hold Ctrl (or Cmd on Mac) to select multiple items.</small>
+        <label>Strengths (Check all applicable checkpoints)</label>
+        <div id="strengthsCheckboxContainer" class="checkbox-grid">
+          <span style="color: #6c757d;">Loading Strengths checkpoints...</span>
+        </div>
       </div>
       <div class="col">
-        <label>Weaknesses (Loaded from SWOC_Mapping Sheet)</label>
-        <select id="swocWeaknesses" multiple></select>
-        <small style="color:#6c757d;">Hold Ctrl (or Cmd on Mac) to select multiple items.</small>
+        <label>Weaknesses (Check all applicable checkpoints)</label>
+        <div id="weaknessesCheckboxContainer" class="checkbox-grid">
+          <span style="color: #6c757d;">Loading Weaknesses checkpoints...</span>
+        </div>
       </div>
     </div>
 
@@ -374,11 +403,11 @@
 
     <div class="row">
       <div class="col">
-        <label>Opportunities (Bullet Points - Type each point on a new line)</label>
+        <label>Opportunities (Bullet Points)</label>
         <textarea id="swocOpportunities" rows="5" placeholder="• Bullet 1&#10;• Bullet 2"></textarea>
       </div>
       <div class="col">
-        <label>Challenges (Bullet Points - Type each point on a new line)</label>
+        <label>Challenges (Bullet Points)</label>
         <textarea id="swocChallenges" rows="5" placeholder="• Bullet 1&#10;• Bullet 2"></textarea>
       </div>
     </div>
@@ -389,35 +418,42 @@
     </div>
   </div>
 
-  <!-- TAB 4: KRA wise KPA Scoring -->
+  <!-- TAB 4: Checkbox KPA Evaluation -->
   <div id="step4" class="wizard-step">
     <h3>KRA wise KPA Scoring</h3>
     <div class="row">
       <div class="col">
-        <label>Select Department (Loaded from KRA vs KPA Sheet)</label>
-        <select id="kraDepartmentSelect" onchange="fetchCheckpointsForDept(this.value)">
-          <option value="">-- Select Department --</option>
-        </select>
+        <label>Select Departments:</label>
+        <div id="deptCheckboxContainer" class="checkbox-grid">
+          <span style="color: #6c757d;">Loading departments...</span>
+        </div>
       </div>
     </div>
 
     <div id="checkpointsContainer" style="margin-top: 15px;">
-      <p style="color: #6c757d;">Please select a department to load checkpoints.</p>
+      <p style="color: #6c757d;">Please check at least one department above to load checkpoints.</p>
     </div>
 
     <div style="display: flex; justify-content: space-between; margin-top: 20px;">
       <button class="btn-secondary" onclick="switchTab(3)">&laquo; Back</button>
-      <button onclick="switchTab(5)">Proceed to Recommendations &raquo;</button>
+      <button onclick="switchTab(5)">Proceed to Recommendations & Summary &raquo;</button>
     </div>
   </div>
 
-  <!-- TAB 5: Recommendations -->
+  <!-- TAB 5: Auto-Calculated Scores & Submission -->
   <div id="step5" class="wizard-step">
-    <h3>Recommendations</h3>
+    <h3>Automated Department Scoring Summary</h3>
+    <div id="departmentSummaryScoresContainer" style="margin-bottom: 25px;">
+      <p style="color: #6c757d;">No department checkpoints evaluated yet. Complete evaluations in Tab 4.</p>
+    </div>
+
+    <hr>
+
+    <h3>Final Recommendations</h3>
     <div class="row">
       <div class="col">
         <label>Final Recommendations & Action Steps</label>
-        <textarea id="recommendations" rows="8" placeholder="Type final recommendations here..."></textarea>
+        <textarea id="recommendations" rows="8" placeholder="Type final recommendations..."></textarea>
       </div>
     </div>
 
@@ -429,32 +465,18 @@
 </div>
 
 <script>
-  // Script URL replace with actual Web App URL
-  const SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
-
-  // Global states
   let consultantsList = [];
-  const kraScoresMap = {};
+  const kraScoresMap = {}; // Structure: { Department: { CheckpointID: true/false } }
+  let departmentKpaCounts = {}; // Stores total KPA counts per department
 
   window.addEventListener("DOMContentLoaded", () => {
-    // Default logged-in user if available
-    const initialUser = localStorage.getItem("nxtage_name");
-    if (initialUser) {
-      consultantsList.push(initialUser);
-      renderConsultants();
-    }
-
     document.getElementById("assDate").valueAsDate = new Date();
-    
-    // Set current time HH:MM
     const now = new Date();
-    const timeStr = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
-    document.getElementById("assTime").value = timeStr;
+    document.getElementById("assTime").value = String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
 
     loadInitialData();
   });
 
-  // Consultant Type & Add logic
   function addConsultant() {
     const input = document.getElementById("consultantInput");
     const name = input.value.trim();
@@ -483,102 +505,190 @@
     
     document.getElementById("step" + tabIndex).classList.add("active");
     document.getElementById("nav-step" + tabIndex).classList.add("active");
+
+    if (tabIndex === 5) {
+      calculateAndRenderDepartmentScores();
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function loadInitialData() {
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "getConsultantInitialData" })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.success) return;
+    google.script.run
+      .withSuccessHandler(data => {
+        if (!data || !data.success) return;
 
-      // Populate Strengths from SWOC_Mapping Sheet
-      const strengthsSelect = document.getElementById("swocStrengths");
-      strengthsSelect.innerHTML = data.strengthsOptions.length > 0 
-        ? data.strengthsOptions.map(s => `<option value="${s}">${s}</option>`).join("")
-        : `<option disabled>No Strengths Found in SWOC_Mapping</option>`;
+        // 1. Populate Strengths Checkboxes
+        const sContainer = document.getElementById("strengthsCheckboxContainer");
+        if (sContainer && data.strengthsOptions) {
+          sContainer.innerHTML = data.strengthsOptions.length > 0 
+            ? data.strengthsOptions.map(s => `
+                <label class="checkbox-item">
+                  <input type="checkbox" value="${s}" class="swoc-strength-cb">
+                  ${s}
+                </label>
+              `).join("")
+            : `<span style="color:red;">No Strengths Checkpoints Found</span>`;
+        }
 
-      // Populate Weaknesses from SWOC_Mapping Sheet
-      const weaknessesSelect = document.getElementById("swocWeaknesses");
-      weaknessesSelect.innerHTML = data.weaknessesOptions.length > 0 
-        ? data.weaknessesOptions.map(w => `<option value="${w}">${w}</option>`).join("")
-        : `<option disabled>No Weaknesses Found in SWOC_Mapping</option>`;
+        // 2. Populate Weaknesses Checkboxes
+        const wContainer = document.getElementById("weaknessesCheckboxContainer");
+        if (wContainer && data.weaknessesOptions) {
+          wContainer.innerHTML = data.weaknessesOptions.length > 0 
+            ? data.weaknessesOptions.map(w => `
+                <label class="checkbox-item">
+                  <input type="checkbox" value="${w}" class="swoc-weakness-cb">
+                  ${w}
+                </label>
+              `).join("")
+            : `<span style="color:red;">No Weaknesses Checkpoints Found</span>`;
+        }
 
-      // Populate Department Select from KRA vs KPA Sheet
-      const deptSelect = document.getElementById("kraDepartmentSelect");
-      deptSelect.innerHTML = `<option value="">-- Select Department --</option>` + 
-        data.departments.map(d => `<option value="${d}">${d}</option>`).join("");
-    })
-    .catch(err => console.error("Error loading initial data:", err));
+        // 3. Populate Methodology Checkboxes
+        const mContainer = document.getElementById("methodologyCheckboxContainer");
+        if (mContainer && data.methodologies) {
+          mContainer.innerHTML = data.methodologies.length > 0 
+            ? data.methodologies.map(m => `
+                <label class="checkbox-item">
+                  <input type="checkbox" value="${m}" class="methodology-cb">
+                  ${m}
+                </label>
+              `).join("")
+            : `<span style="color:red;">No Methodologies Found</span>`;
+        }
+
+        // 4. Populate Department Checkboxes
+        const deptCheckboxContainer = document.getElementById("deptCheckboxContainer");
+        if (deptCheckboxContainer) {
+          if (data.departments && data.departments.length > 0) {
+            deptCheckboxContainer.innerHTML = data.departments.map(d => `
+              <label class="checkbox-item">
+                <input type="checkbox" value="${d}" class="dept-checkbox" onchange="fetchCheckpointsForCheckedDepts()">
+                ${d}
+              </label>
+            `).join("");
+          } else {
+            deptCheckboxContainer.innerHTML = `<span style="color:red;">No Departments Found</span>`;
+          }
+        }
+      })
+      .getConsultantInitialData();
   }
 
-  function fetchCheckpointsForDept(dept) {
+  function fetchCheckpointsForCheckedDepts() {
+    const checkedBoxes = document.querySelectorAll(".dept-checkbox:checked");
+    const selectedDepts = Array.from(checkedBoxes).map(cb => cb.value);
     const container = document.getElementById("checkpointsContainer");
-    if (!dept) {
-      container.innerHTML = `<p style="color: #6c757d;">Please select a department to load checkpoints.</p>`;
+
+    if (selectedDepts.length === 0) {
+      container.innerHTML = `<p style="color: #6c757d;">Please check at least one department above to load checkpoints.</p>`;
       return;
     }
 
-    container.innerHTML = "<p>Loading checkpoints from KRA vs KPA sheet...</p>";
+    container.innerHTML = "<p>Loading checkpoints...</p>";
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify({ action: "getDepartmentCheckpoints", department: dept })
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (!data.success || data.checkpoints.length === 0) {
-        container.innerHTML = `<p style="color: red;">No checkpoints found for "${dept}" in 'KRA vs KPA' sheet.</p>`;
-        return;
-      }
+    google.script.run
+      .withSuccessHandler(data => {
+        if (!data || !data.success || !data.checkpoints || data.checkpoints.length === 0) {
+          container.innerHTML = `<p style="color: red;">No checkpoints found for selected departments.</p>`;
+          return;
+        }
 
-      let html = `
-        <table class="score-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Checkpoint / KPA Description</th>
-              <th>Score (Out of 10)</th>
-            </tr>
-          </thead>
-          <tbody>
-      `;
+        departmentKpaCounts = {};
 
-      data.checkpoints.forEach(cp => {
-        const existingScore = (kraScoresMap[dept] && kraScoresMap[dept][cp.id]) !== undefined ? kraScoresMap[dept][cp.id] : "";
-        html += `
-          <tr>
-            <td>${cp.id}</td>
-            <td>${cp.text}</td>
-            <td>
-              <input type="number" class="score-input" min="0" max="10" 
-                value="${existingScore}" 
-                onchange="saveScore('${dept}', '${cp.id}', this.value)" placeholder="0-10">
-            </td>
-          </tr>
+        let html = `
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Checkpoint / KPA Description</th>
+                <th style="width: 140px; text-align: center;">Implemented?</th>
+              </tr>
+            </thead>
+            <tbody>
         `;
-      });
 
-      html += `</tbody></table>`;
-      container.innerHTML = html;
-    })
-    .catch(err => {
-      container.innerHTML = `<p style="color: red;">Failed to load checkpoints.</p>`;
-    });
+        data.checkpoints.forEach(cp => {
+          // Track total count of KPAs per department
+          departmentKpaCounts[cp.dept] = (departmentKpaCounts[cp.dept] || 0) + 1;
+
+          const isChecked = (kraScoresMap[cp.dept] && kraScoresMap[cp.dept][cp.id] === true) ? "checked" : "";
+
+          html += `
+            <tr>
+              <td><strong>${cp.dept}</strong></td>
+              <td>${cp.text}</td>
+              <td style="text-align: center;">
+                <input type="checkbox" style="width:20px; height:20px; cursor:pointer;"
+                  ${isChecked} 
+                  onchange="saveScore('${cp.dept}', '${cp.id}', this.checked)">
+              </td>
+            </tr>
+          `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      })
+      .getDepartmentCheckpoints(selectedDepts);
   }
 
-  function saveScore(dept, cpId, scoreVal) {
+  function saveScore(dept, cpId, isChecked) {
     if (!kraScoresMap[dept]) kraScoresMap[dept] = {};
-    kraScoresMap[dept][cpId] = Number(scoreVal);
+    kraScoresMap[dept][cpId] = isChecked;
+  }
+
+  /**
+   * Automatically calculates Tab 5 Department Scores out of 10 based on True/False counts
+   */
+  function calculateAndRenderDepartmentScores() {
+    const container = document.getElementById("departmentSummaryScoresContainer");
+    const checkedBoxes = document.querySelectorAll(".dept-checkbox:checked");
+    const selectedDepts = Array.from(checkedBoxes).map(cb => cb.value);
+
+    if (selectedDepts.length === 0) {
+      container.innerHTML = `<p style="color: #6c757d;">No departments selected in Tab 4.</p>`;
+      return;
+    }
+
+    let html = "";
+    selectedDepts.forEach(dept => {
+      const totalKpas = departmentKpaCounts[dept] || 0;
+      let achievedCount = 0;
+
+      if (kraScoresMap[dept]) {
+        Object.keys(kraScoresMap[dept]).forEach(cpId => {
+          if (kraScoresMap[dept][cpId] === true) {
+            achievedCount++;
+          }
+        });
+      }
+
+      const scoreOutOf10 = totalKpas > 0 ? ((achievedCount / totalKpas) * 10).toFixed(1) : "0.0";
+      const percentage = totalKpas > 0 ? Math.round((achievedCount / totalKpas) * 100) : 0;
+
+      html += `
+        <div class="dept-score-card">
+          <div>
+            <strong>${dept}</strong><br>
+            <span style="font-size: 13px; color: #555;">
+              ${achievedCount} of ${totalKpas} KPAs Implemented (${percentage}%)
+            </span>
+          </div>
+          <div class="dept-score-badge">
+            ${scoreOutOf10} / 10
+          </div>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
   }
 
   function submitAssessment() {
     const companyName = document.getElementById("companyName").value;
     if (!companyName) {
-      alert("Please fill in Company Name in Tab 1.");
+      alert("Please enter a Company Name in Tab 1.");
       switchTab(1);
       return;
     }
@@ -589,62 +699,57 @@
       return;
     }
 
-    // Get multi-select Strengths & Weaknesses
-    const strengths = Array.from(document.getElementById("swocStrengths").selectedOptions).map(o => o.value);
-    const weaknesses = Array.from(document.getElementById("swocWeaknesses").selectedOptions).map(o => o.value);
+    // Extract multi-selected Methodologies
+    const selectedMethodologies = Array.from(document.querySelectorAll(".methodology-cb:checked")).map(cb => cb.value);
 
-    const payload = {
-      action: "submitConsultantAssessment",
-      formData: {
-        leadId: document.getElementById("activeLeadId").value,
-        companyName: companyName,
-        bizType: document.getElementById("bizType").value,
-        bizSector: document.getElementById("bizSector").value,
-        companyType: document.getElementById("companyType").value,
-        teamDescription: document.getElementById("teamDescription").value,
-        countMgmt: document.getElementById("countMgmt").value,
-        countTop: document.getElementById("countTop").value,
-        countMid: document.getElementById("countMid").value,
-        countBottom: document.getElementById("countBottom").value,
-        countLabor: document.getElementById("countLabor").value,
-        
-        whyThisUp: document.getElementById("whyThisUp").value,
-        date: document.getElementById("assDate").value,
-        time: document.getElementById("assTime").value,
-        mode: document.getElementById("assMode").value,
-        consultants: consultantsList,
-        assType: document.getElementById("assType").value,
+    // Extract multi-selected Strengths
+    const selectedStrengths = Array.from(document.querySelectorAll(".swoc-strength-cb:checked")).map(cb => cb.value);
+    
+    // Extract multi-selected Weaknesses
+    const selectedWeaknesses = Array.from(document.querySelectorAll(".swoc-weakness-cb:checked")).map(cb => cb.value);
 
-        summary: document.getElementById("assessmentSummary").value,
-        methodology: document.getElementById("methodologyApproach").value,
+    const formData = {
+      leadId: document.getElementById("activeLeadId").value,
+      companyName: companyName,
+      bizType: document.getElementById("bizType").value,
+      bizSector: document.getElementById("bizSector").value,
+      companyType: document.getElementById("companyType").value,
+      teamDescription: document.getElementById("teamDescription").value,
+      countMgmt: document.getElementById("countMgmt").value,
+      countTop: document.getElementById("countTop").value,
+      countMid: document.getElementById("countMid").value,
+      countBottom: document.getElementById("countBottom").value,
+      countLabor: document.getElementById("countLabor").value,
+      
+      whyThisUp: document.getElementById("whyThisUp").value,
+      date: document.getElementById("assDate").value,
+      time: document.getElementById("assTime").value,
+      mode: document.getElementById("assMode").value,
+      consultants: consultantsList,
+      assType: document.getElementById("assType").value,
 
-        strengths: strengths,
-        weaknesses: weaknesses,
-        opportunities: document.getElementById("swocOpportunities").value,
-        challenges: document.getElementById("swocChallenges").value,
+      summary: document.getElementById("assessmentSummary").value,
+      methodology: selectedMethodologies,
 
-        kraScores: kraScoresMap,
-        recommendations: document.getElementById("recommendations").value
-      }
+      strength: selectedStrengths,
+      weakness: selectedWeaknesses,
+      opportunities: document.getElementById("swocOpportunities").value,
+      challenges: document.getElementById("swocChallenges").value,
+
+      kraScores: kraScoresMap,
+      recommendations: document.getElementById("recommendations").value
     };
 
-    fetch(SCRIPT_URL, {
-      method: "POST",
-      body: JSON.stringify(payload)
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.success) {
-        alert("Assessment submitted successfully with ID: " + data.assessmentId);
-        window.location.reload();
-      } else {
-        alert("Submission failed: " + data.error);
-      }
-    })
-    .catch(err => {
-      alert("An error occurred while submitting.");
-      console.error(err);
-    });
+    google.script.run
+      .withSuccessHandler(data => {
+        if (data && data.success) {
+          alert("Assessment submitted successfully! ID: " + data.assessmentId);
+          location.reload();
+        } else {
+          alert("Submission failed: " + (data ? data.error : "Unknown error"));
+        }
+      })
+      .submitConsultantAssessment(formData);
   }
 </script>
 
