@@ -106,6 +106,32 @@
       margin: 20px 0;
     }
 
+    /* Consultant Tag Styling */
+    .consultant-tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .consultant-tag {
+      background: #e0f0ff;
+      color: var(--primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .consultant-tag span {
+      cursor: pointer;
+      color: #d9534f;
+      font-weight: bold;
+    }
+
     /* Buttons */
     button {
       background-color: var(--primary);
@@ -159,9 +185,8 @@
       width: 80px;
     }
 
-    /* Multi-select box */
     select[multiple] {
-      height: 120px;
+      height: 140px;
     }
   </style>
 </head>
@@ -254,8 +279,8 @@
     <h3>About the Company Assessment</h3>
     <div class="row">
       <div class="col">
-        <label>Why this Up?</label>
-        <input type="text" id="whyThisUp" placeholder="Reason for assessment">
+        <label>Why this Up? (Bullet Points)</label>
+        <textarea id="whyThisUp" rows="4" placeholder="• Type points in bullets here...&#10;• Second reason..."></textarea>
       </div>
     </div>
 
@@ -279,8 +304,12 @@
 
     <div class="row">
       <div class="col">
-        <label>Consultant(s) (Logged-in User)</label>
-        <input type="text" id="consultantName" readonly style="background-color: #e9ecef;">
+        <label>Consultant(s) Involved (Type and click Add)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="consultantInput" placeholder="Enter consultant name">
+          <button type="button" onclick="addConsultant()" style="white-space: nowrap;">+ Add</button>
+        </div>
+        <div id="consultantList" class="consultant-tag-container"></div>
       </div>
       <div class="col">
         <label>Assessment Type</label>
@@ -330,12 +359,14 @@
     <h3>SWOC Analysis</h3>
     <div class="row">
       <div class="col">
-        <label>Strengths (Hold Ctrl/Cmd to select multiple from Sheets)</label>
+        <label>Strengths (Loaded from SWOC_Mapping Sheet)</label>
         <select id="swocStrengths" multiple></select>
+        <small style="color:#6c757d;">Hold Ctrl (or Cmd on Mac) to select multiple items.</small>
       </div>
       <div class="col">
-        <label>Weaknesses (Hold Ctrl/Cmd to select multiple from Sheets)</label>
+        <label>Weaknesses (Loaded from SWOC_Mapping Sheet)</label>
         <select id="swocWeaknesses" multiple></select>
+        <small style="color:#6c757d;">Hold Ctrl (or Cmd on Mac) to select multiple items.</small>
       </div>
     </div>
 
@@ -363,7 +394,7 @@
     <h3>KRA wise KPA Scoring</h3>
     <div class="row">
       <div class="col">
-        <label>Select Department</label>
+        <label>Select Department (Loaded from KRA vs KPA Sheet)</label>
         <select id="kraDepartmentSelect" onchange="fetchCheckpointsForDept(this.value)">
           <option value="">-- Select Department --</option>
         </select>
@@ -401,14 +432,18 @@
   // Script URL replace with actual Web App URL
   const SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
 
-  // Simulated logged-in user (replace with actual dynamic storage like localStorage.getItem('nxtage_name'))
-  const globalUserName = localStorage.getItem("nxtage_name") || "Consultant User";
-
-  // Global state for KRA scores
+  // Global states
+  let consultantsList = [];
   const kraScoresMap = {};
 
   window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("consultantName").value = globalUserName;
+    // Default logged-in user if available
+    const initialUser = localStorage.getItem("nxtage_name");
+    if (initialUser) {
+      consultantsList.push(initialUser);
+      renderConsultants();
+    }
+
     document.getElementById("assDate").valueAsDate = new Date();
     
     // Set current time HH:MM
@@ -418,6 +453,29 @@
 
     loadInitialData();
   });
+
+  // Consultant Type & Add logic
+  function addConsultant() {
+    const input = document.getElementById("consultantInput");
+    const name = input.value.trim();
+    if (name && !consultantsList.includes(name)) {
+      consultantsList.push(name);
+      renderConsultants();
+      input.value = "";
+    }
+  }
+
+  function removeConsultant(name) {
+    consultantsList = consultantsList.filter(c => c !== name);
+    renderConsultants();
+  }
+
+  function renderConsultants() {
+    const container = document.getElementById("consultantList");
+    container.innerHTML = consultantsList.map(c => 
+      `<span class="consultant-tag">${c} <span onclick="removeConsultant('${c}')">&times;</span></span>`
+    ).join("");
+  }
 
   function switchTab(tabIndex) {
     document.querySelectorAll(".wizard-step").forEach(el => el.classList.remove("active"));
@@ -431,21 +489,25 @@
   function loadInitialData() {
     fetch(SCRIPT_URL, {
       method: "POST",
-      body: JSON.stringify({ action: "getConsultantInitialData", consultantName: globalUserName })
+      body: JSON.stringify({ action: "getConsultantInitialData" })
     })
     .then(res => res.json())
     .then(data => {
       if (!data.success) return;
 
-      // Populate Strengths
+      // Populate Strengths from SWOC_Mapping Sheet
       const strengthsSelect = document.getElementById("swocStrengths");
-      strengthsSelect.innerHTML = data.strengthsOptions.map(s => `<option value="${s}">${s}</option>`).join("");
+      strengthsSelect.innerHTML = data.strengthsOptions.length > 0 
+        ? data.strengthsOptions.map(s => `<option value="${s}">${s}</option>`).join("")
+        : `<option disabled>No Strengths Found in SWOC_Mapping</option>`;
 
-      // Populate Weaknesses
+      // Populate Weaknesses from SWOC_Mapping Sheet
       const weaknessesSelect = document.getElementById("swocWeaknesses");
-      weaknessesSelect.innerHTML = data.weaknessesOptions.map(w => `<option value="${w}">${w}</option>`).join("");
+      weaknessesSelect.innerHTML = data.weaknessesOptions.length > 0 
+        ? data.weaknessesOptions.map(w => `<option value="${w}">${w}</option>`).join("")
+        : `<option disabled>No Weaknesses Found in SWOC_Mapping</option>`;
 
-      // Populate Department Select
+      // Populate Department Select from KRA vs KPA Sheet
       const deptSelect = document.getElementById("kraDepartmentSelect");
       deptSelect.innerHTML = `<option value="">-- Select Department --</option>` + 
         data.departments.map(d => `<option value="${d}">${d}</option>`).join("");
@@ -460,7 +522,7 @@
       return;
     }
 
-    container.innerHTML = "<p>Loading checkpoints...</p>";
+    container.innerHTML = "<p>Loading checkpoints from KRA vs KPA sheet...</p>";
 
     fetch(SCRIPT_URL, {
       method: "POST",
@@ -469,7 +531,7 @@
     .then(res => res.json())
     .then(data => {
       if (!data.success || data.checkpoints.length === 0) {
-        container.innerHTML = `<p style="color: red;">No checkpoints found for ${dept}.</p>`;
+        container.innerHTML = `<p style="color: red;">No checkpoints found for "${dept}" in 'KRA vs KPA' sheet.</p>`;
         return;
       }
 
@@ -521,6 +583,12 @@
       return;
     }
 
+    if (consultantsList.length === 0) {
+      alert("Please add at least one consultant in Tab 1.");
+      switchTab(1);
+      return;
+    }
+
     // Get multi-select Strengths & Weaknesses
     const strengths = Array.from(document.getElementById("swocStrengths").selectedOptions).map(o => o.value);
     const weaknesses = Array.from(document.getElementById("swocWeaknesses").selectedOptions).map(o => o.value);
@@ -544,7 +612,7 @@
         date: document.getElementById("assDate").value,
         time: document.getElementById("assTime").value,
         mode: document.getElementById("assMode").value,
-        consultant: document.getElementById("consultantName").value,
+        consultants: consultantsList,
         assType: document.getElementById("assType").value,
 
         summary: document.getElementById("assessmentSummary").value,
