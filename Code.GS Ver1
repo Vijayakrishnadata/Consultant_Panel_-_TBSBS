@@ -1,5 +1,5 @@
 // =======================================================
-// INITIALIZATION / SETUP FUNCTION
+// INITIALIZATION / DATABASE SETUP FUNCTION
 // =======================================================
 function setupDatabaseSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -17,11 +17,11 @@ function setupDatabaseSheets() {
       ]
     },
     {
-      name: "SWOC_Master",
-      headers: ["ID", "Category", "Item_Text"]
+      name: "SWOC_Mapping",
+      headers: ["Area", "Category", "KPI", "Consequence"]
     },
     {
-      name: "KRA_Checkpoints_Master",
+      name: "KRA vs KPA",
       headers: ["Department", "Checkpoint_ID", "Checkpoint_Text"]
     }
   ];
@@ -37,27 +37,7 @@ function setupDatabaseSheets() {
     }
   });
 
-  // Populate sample SWOC data if empty
-  const swocSheet = ss.getSheetByName("SWOC_Master");
-  if (swocSheet.getLastRow() <= 1) {
-    swocSheet.appendRow(["1", "Strength", "Strong Brand Reputation"]);
-    swocSheet.appendRow(["2", "Strength", "High Employee Retention"]);
-    swocSheet.appendRow(["3", "Weakness", "Outdated Software Systems"]);
-    swocSheet.appendRow(["4", "Weakness", "High Operational Overhead"]);
-  }
-
-  // Populate sample KRA/KPA Checkpoints if empty
-  const kraSheet = ss.getSheetByName("KRA_Checkpoints_Master");
-  if (kraSheet.getLastRow() <= 1) {
-    kraSheet.appendRow(["Management", "MGT-01", "Strategic Vision & Goal Alignment"]);
-    kraSheet.appendRow(["Management", "MGT-02", "Organizational Hierarchy & Delegation"]);
-    kraSheet.appendRow(["Marketing", "MKT-01", "Lead Generation Efficiency"]);
-    kraSheet.appendRow(["Marketing", "MKT-02", "Brand Consistency Across Channels"]);
-    kraSheet.appendRow(["HR", "HR-01", "Onboarding & Training Process"]);
-    kraSheet.appendRow(["HR", "HR-02", "Performance Management System (PMS)"]);
-  }
-
-  SpreadsheetApp.getUi().alert("Database Setup Completed Successfully!");
+  SpreadsheetApp.getUi().alert("Database Sheets Checked / Initialized Successfully!");
 }
 
 // =======================================================
@@ -69,7 +49,7 @@ function doPost(e) {
     const action = requestData.action;
 
     if (action === "getConsultantInitialData") {
-      return jsonResponse(getConsultantInitialData(requestData.consultantName));
+      return jsonResponse(getConsultantInitialData());
     }
     
     if (action === "getDepartmentCheckpoints") {
@@ -94,48 +74,75 @@ function jsonResponse(data) {
 // =======================================================
 // HELPER FUNCTIONS
 // =======================================================
-function getConsultantInitialData(consultantName) {
+function getConsultantInitialData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // SWOC Options
-  const swocSheet = ss.getSheetByName("SWOC_Master");
-  const swocRows = swocSheet.getRange(2, 1, Math.max(swocSheet.getLastRow() - 1, 1), 3).getValues();
-  const strengths = [];
-  const weaknesses = [];
+  // 1. Read SWOC_Mapping Sheet
+  const swocSheet = ss.getSheetByName("SWOC_Mapping");
+  const strengths = new Set();
+  const weaknesses = new Set();
 
-  swocRows.forEach(row => {
-    if (row[1] === "Strength") strengths.push(row[2]);
-    if (row[1] === "Weakness") weaknesses.push(row[2]);
-  });
+  if (swocSheet && swocSheet.getLastRow() > 1) {
+    const swocRows = swocSheet.getRange(2, 1, swocSheet.getLastRow() - 1, swocSheet.getLastColumn()).getValues();
+    swocRows.forEach(row => {
+      // Assuming Category is Col B (index 1) and KPI/Text is Col C (index 2)
+      const category = (row[1] || "").toString().trim().toLowerCase();
+      const itemText = (row[2] || "").toString().trim();
+      
+      if (itemText) {
+        if (category === "strength") strengths.add(itemText);
+        if (category === "weakness") weaknesses.add(itemText);
+      }
+    });
+  }
 
-  // Department List for KRA/KPA
-  const kraSheet = ss.getSheetByName("KRA_Checkpoints_Master");
-  const kraRows = kraSheet.getRange(2, 1, Math.max(kraSheet.getLastRow() - 1, 1), 3).getValues();
-  const departments = [...new Set(kraRows.map(r => r[0]).filter(Boolean))];
+  // 2. Read KRA vs KPA Sheet for Department list
+  const kraSheet = ss.getSheetByName("KRA vs KPA");
+  const departments = new Set();
+
+  if (kraSheet && kraSheet.getLastRow() > 1) {
+    const kraRows = kraSheet.getRange(2, 1, kraSheet.getLastRow() - 1, 1).getValues();
+    kraRows.forEach(row => {
+      const dept = (row[0] || "").toString().trim();
+      if (dept) departments.add(dept);
+    });
+  }
 
   return {
     success: true,
-    strengthsOptions: strengths,
-    weaknessesOptions: weaknesses,
-    departments: departments
+    strengthsOptions: Array.from(strengths),
+    weaknessesOptions: Array.from(weaknesses),
+    departments: Array.from(departments)
   };
 }
 
 function getDepartmentCheckpoints(department) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const kraSheet = ss.getSheetByName("KRA_Checkpoints_Master");
-  const kraRows = kraSheet.getRange(2, 1, Math.max(kraSheet.getLastRow() - 1, 1), 3).getValues();
+  const kraSheet = ss.getSheetByName("KRA vs KPA");
+  
+  if (!kraSheet || kraSheet.getLastRow() <= 1) {
+    return { success: true, checkpoints: [] };
+  }
+
+  const kraRows = kraSheet.getRange(2, 1, kraSheet.getLastRow() - 1, Math.max(kraSheet.getLastColumn(), 3)).getValues();
 
   const checkpoints = kraRows
-    .filter(r => r[0] === department)
-    .map(r => ({ id: r[1], text: r[2] }));
+    .filter(r => (r[0] || "").toString().trim() === department)
+    .map((r, idx) => ({
+      id: r[1] ? r[1].toString().trim() : "CP-" + (idx + 1),
+      text: r[2] ? r[2].toString().trim() : r[1] // fallback if ID column varies
+    }));
 
   return { success: true, checkpoints: checkpoints };
 }
 
 function submitConsultantAssessment(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName("Assessments");
+  let sheet = ss.getSheetByName("Assessments");
+
+  if (!sheet) {
+    sheet = ss.insertSheet("Assessments");
+  }
 
   const newId = "ASS-" + new Date().getTime();
 
@@ -145,7 +152,7 @@ function submitConsultantAssessment(data) {
     data.date || "",
     data.time || "",
     data.companyName || "",
-    data.consultant || "",
+    (data.consultants || []).join(", "),
     data.bizType || "",
     data.bizSector || "",
     data.companyType || "",
