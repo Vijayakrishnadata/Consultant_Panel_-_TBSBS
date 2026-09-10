@@ -1,180 +1,175 @@
-// =======================================================
-// INITIALIZATION / DATABASE SETUP FUNCTION
-// =======================================================
-function setupDatabaseSheets() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  const sheetsToCreate = [
-    {
-      name: "Assessments",
-      headers: [
+/**
+ * Company Assessment Form - Google Apps Script Backend (Code.gs)
+ * Database ID: 1zTRAjeOqXp6M_IPTbJqn8FCCE00yFPs04SnK4rN68O8
+ */
+
+const SPREADSHEET_ID = "1zTRAjeOqXp6M_IPTbJqn8FCCE00yFPs04SnK4rN68O8";
+
+/**
+ * Serves the HTML Web Application ("Consultant View.html")
+ */
+function doGet(e) {
+  return HtmlService.createTemplateFromFile("Consultant View")
+    .evaluate()
+    .setTitle("Company Assessment Form")
+    .addMetaTag("viewport", "width=device-width, initial-scale=1")
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+/**
+ * Handles HTTP POST payloads directly
+ */
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const result = submitConsultantAssessment(data);
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.message }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+/**
+ * Loads SWOC options, Methodologies, and Department List for the Form
+ */
+function getConsultantInitialData() {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+
+    // 1. Load SWOC Mapping Data (Columns A & B for Strengths/Weaknesses checkpoints)
+    const swocSheet = ss.getSheetByName("SWOC_Mapping Data");
+    const swocData = swocSheet ? swocSheet.getDataRange().getValues() : [];
+    const swocTopicsSet = new Set();
+
+    for (let i = 1; i < swocData.length; i++) {
+      const colA = swocData[i][0] ? String(swocData[i][0]).trim() : "";
+      const colB = swocData[i][1] ? String(swocData[i][1]).trim() : "";
+      if (colA) swocTopicsSet.add(colA);
+      if (colB) swocTopicsSet.add(colB);
+    }
+    const swocList = Array.from(swocTopicsSet);
+
+    // 2. Load Methodology Options
+    const methodSheet = ss.getSheetByName("Methodology");
+    const methodData = methodSheet ? methodSheet.getDataRange().getValues() : [];
+    const methodologies = [];
+
+    for (let j = 1; j < methodData.length; j++) {
+      const item = methodData[j][0] ? String(methodData[j][0]).trim() : "";
+      if (item) methodologies.push(item);
+    }
+
+    // 3. Load Unique Departments from KRA vs KPA Data
+    const kraSheet = ss.getSheetByName("KRA vs KPA Data");
+    const kraData = kraSheet ? kraSheet.getDataRange().getValues() : [];
+    const deptSet = new Set();
+
+    for (let k = 1; k < kraData.length; k++) {
+      const dept = kraData[k][0] ? String(kraData[k][0]).trim() : "";
+      if (dept) deptSet.add(dept);
+    }
+
+    return {
+      success: true,
+      strengthsOptions: swocList,
+      weaknessesOptions: swocList,
+      methodologies: methodologies,
+      departments: Array.from(deptSet)
+    };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+/**
+ * Fetches KPA checkpoints filtered by selected departments
+ */
+function getDepartmentCheckpoints(selectedDepts) {
+  try {
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName("KRA vs KPA Data");
+    if (!sheet) return { success: false, checkpoints: [] };
+
+    const data = sheet.getDataRange().getValues();
+    const checkpoints = [];
+    const deptList = Array.isArray(selectedDepts) ? selectedDepts : [selectedDepts];
+
+    for (let i = 1; i < data.length; i++) {
+      const dept = String(data[i][0]).trim();
+      const kpaText = String(data[i][1]).trim();
+
+      if (deptList.includes(dept) && kpaText !== "") {
+        checkpoints.push({
+          dept: dept,
+          id: "KPA_" + i,
+          text: kpaText
+        });
+      }
+    }
+
+    return { success: true, checkpoints: checkpoints };
+  } catch (err) {
+    return { success: false, error: err.message, checkpoints: [] };
+  }
+}
+
+/**
+ * Stores assessment submission in the 'Assessments' sheet
+ */
+function submitConsultantAssessment(formData) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName("Assessments");
+
+    if (!sheet) {
+      sheet = ss.insertSheet("Assessments");
+      sheet.appendRow([
         "Assessment_ID", "Lead_ID", "Assessment_Date", "Assessment_Time", "Company_Name", 
-        "Consultants", "Biz_Type", "Biz_Sector", "Company_Type", "The_Team_Description",
-        "Count_Management", "Count_TopLine", "Count_MidLine", "Count_BottomLine", "Count_Labor",
+        "Consultants", "Biz_Type", "Biz_Sector", "Company_Type", "The_Team_Description", 
+        "Count_Management", "Count_TopLine", "Count_MidLine", "Count_BottomLine", "Count_Labor", 
         "Why_This_Up", "Mode_Of_Assessment", "Assessment_Type", "Assessment_Summary", 
         "Methodology_Approach", "Strengths", "Weaknesses", "Opportunities", "Challenges", 
         "KRA_KPA_Scores_JSON", "Recommendations", "Created_At"
-      ]
-    },
-    {
-      name: "SWOC_Mapping",
-      headers: ["Area", "Category", "KPI", "Consequence"]
-    },
-    {
-      name: "KRA vs KPA",
-      headers: ["Department", "Checkpoint_ID", "Checkpoint_Text"]
-    }
-  ];
-
-  sheetsToCreate.forEach(s => {
-    let sheet = ss.getSheetByName(s.name);
-    if (!sheet) {
-      sheet = ss.insertSheet(s.name);
-    }
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(s.headers);
-      sheet.getRange(1, 1, 1, s.headers.length).setFontWeight("bold");
-    }
-  });
-
-  SpreadsheetApp.getUi().alert("Database Sheets Checked / Initialized Successfully!");
-}
-
-// =======================================================
-// WEB APP API ENDPOINTS (doPost / doGet)
-// =======================================================
-function doPost(e) {
-  try {
-    const requestData = JSON.parse(e.postData.contents);
-    const action = requestData.action;
-
-    if (action === "getConsultantInitialData") {
-      return jsonResponse(getConsultantInitialData());
-    }
-    
-    if (action === "getDepartmentCheckpoints") {
-      return jsonResponse(getDepartmentCheckpoints(requestData.department));
+      ]);
     }
 
-    if (action === "submitConsultantAssessment") {
-      return jsonResponse(submitConsultantAssessment(requestData.formData));
-    }
+    const assessmentId = "ASM-" + new Date().getTime();
+    const createdAt = new Date();
 
-    return jsonResponse({ success: false, error: "Invalid action" });
+    const rowData = [
+      assessmentId,
+      formData.leadId || "",
+      formData.date || "",
+      formData.time || "",
+      formData.companyName || "",
+      Array.isArray(formData.consultants) ? formData.consultants.join(", ") : (formData.consultants || ""),
+      formData.bizType || "",
+      formData.bizSector || "",
+      formData.companyType || "",
+      formData.teamDescription || "",
+      formData.countMgmt || 0,
+      formData.countTop || 0,
+      formData.countMid || 0,
+      formData.countBottom || 0,
+      formData.countLabor || 0,
+      formData.whyThisUp || "",
+      formData.mode || "",
+      formData.assType || "",
+      formData.summary || "",
+      Array.isArray(formData.methodology) ? formData.methodology.join("; ") : (formData.methodology || ""),
+      Array.isArray(formData.strength) ? formData.strength.join("; ") : (formData.strength || ""),
+      Array.isArray(formData.weakness) ? formData.weakness.join("; ") : (formData.weakness || ""),
+      formData.opportunities || "",
+      formData.challenges || "",
+      typeof formData.kraScores === "object" ? JSON.stringify(formData.kraScores) : (formData.kraScores || "{}"),
+      formData.recommendations || "",
+      createdAt
+    ];
+
+    sheet.appendRow(rowData);
+    return { success: true, assessmentId: assessmentId };
   } catch (err) {
-    return jsonResponse({ success: false, error: err.toString() });
+    return { success: false, error: err.message };
   }
-}
-
-function jsonResponse(data) {
-  return ContentService.createTextOutput(JSON.stringify(data))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-// =======================================================
-// HELPER FUNCTIONS
-// =======================================================
-function getConsultantInitialData() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  // 1. Read SWOC_Mapping Sheet
-  const swocSheet = ss.getSheetByName("SWOC_Mapping");
-  const strengths = new Set();
-  const weaknesses = new Set();
-
-  if (swocSheet && swocSheet.getLastRow() > 1) {
-    const swocRows = swocSheet.getRange(2, 1, swocSheet.getLastRow() - 1, swocSheet.getLastColumn()).getValues();
-    swocRows.forEach(row => {
-      // Assuming Category is Col B (index 1) and KPI/Text is Col C (index 2)
-      const category = (row[1] || "").toString().trim().toLowerCase();
-      const itemText = (row[2] || "").toString().trim();
-      
-      if (itemText) {
-        if (category === "strength") strengths.add(itemText);
-        if (category === "weakness") weaknesses.add(itemText);
-      }
-    });
-  }
-
-  // 2. Read KRA vs KPA Sheet for Department list
-  const kraSheet = ss.getSheetByName("KRA vs KPA");
-  const departments = new Set();
-
-  if (kraSheet && kraSheet.getLastRow() > 1) {
-    const kraRows = kraSheet.getRange(2, 1, kraSheet.getLastRow() - 1, 1).getValues();
-    kraRows.forEach(row => {
-      const dept = (row[0] || "").toString().trim();
-      if (dept) departments.add(dept);
-    });
-  }
-
-  return {
-    success: true,
-    strengthsOptions: Array.from(strengths),
-    weaknessesOptions: Array.from(weaknesses),
-    departments: Array.from(departments)
-  };
-}
-
-function getDepartmentCheckpoints(department) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const kraSheet = ss.getSheetByName("KRA vs KPA");
-  
-  if (!kraSheet || kraSheet.getLastRow() <= 1) {
-    return { success: true, checkpoints: [] };
-  }
-
-  const kraRows = kraSheet.getRange(2, 1, kraSheet.getLastRow() - 1, Math.max(kraSheet.getLastColumn(), 3)).getValues();
-
-  const checkpoints = kraRows
-    .filter(r => (r[0] || "").toString().trim() === department)
-    .map((r, idx) => ({
-      id: r[1] ? r[1].toString().trim() : "CP-" + (idx + 1),
-      text: r[2] ? r[2].toString().trim() : r[1] // fallback if ID column varies
-    }));
-
-  return { success: true, checkpoints: checkpoints };
-}
-
-function submitConsultantAssessment(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName("Assessments");
-
-  if (!sheet) {
-    sheet = ss.insertSheet("Assessments");
-  }
-
-  const newId = "ASS-" + new Date().getTime();
-
-  sheet.appendRow([
-    newId,
-    data.leadId || "",
-    data.date || "",
-    data.time || "",
-    data.companyName || "",
-    (data.consultants || []).join(", "),
-    data.bizType || "",
-    data.bizSector || "",
-    data.companyType || "",
-    data.teamDescription || "",
-    data.countMgmt || 0,
-    data.countTop || 0,
-    data.countMid || 0,
-    data.countBottom || 0,
-    data.countLabor || 0,
-    data.whyThisUp || "",
-    data.mode || "",
-    data.assType || "",
-    data.summary || "",
-    data.methodology || "",
-    (data.strengths || []).join("; "),
-    (data.weaknesses || []).join("; "),
-    data.opportunities || "",
-    data.challenges || "",
-    JSON.stringify(data.kraScores || {}),
-    data.recommendations || "",
-    new Date()
-  ]);
-
-  return { success: true, assessmentId: newId };
 }
