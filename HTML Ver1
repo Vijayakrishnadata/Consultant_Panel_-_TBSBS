@@ -202,23 +202,6 @@
       height: 16px;
       cursor: pointer;
     }
-
-    .dept-score-card {
-      background: #eef6ff;
-      border-left: 4px solid var(--primary);
-      padding: 12px 18px;
-      margin-bottom: 12px;
-      border-radius: 4px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .dept-score-badge {
-      font-size: 16px;
-      font-weight: bold;
-      color: var(--primary);
-    }
   </style>
 </head>
 <body>
@@ -231,7 +214,7 @@
     <span id="nav-step2" onclick="switchTab(2)">2. Assessment Report</span>
     <span id="nav-step3" onclick="switchTab(3)">3. SWOC</span>
     <span id="nav-step4" onclick="switchTab(4)">4. KRA/KPA Scoring</span>
-    <span id="nav-step5" onclick="switchTab(5)">5. Recommendations & Summary</span>
+    <span id="nav-step5" onclick="switchTab(5)">5. Recommendations</span>
   </div>
 
   <input type="hidden" id="activeLeadId" value="">
@@ -436,20 +419,13 @@
 
     <div style="display: flex; justify-content: space-between; margin-top: 20px;">
       <button class="btn-secondary" onclick="switchTab(3)">&laquo; Back</button>
-      <button onclick="switchTab(5)">Proceed to Recommendations & Summary &raquo;</button>
+      <button onclick="switchTab(5)">Proceed to Recommendations &raquo;</button>
     </div>
   </div>
 
-  <!-- TAB 5: Auto-Calculated Scores & Submission -->
+  <!-- TAB 5: Recommendations & Submission -->
   <div id="step5" class="wizard-step">
-    <h3>Automated Department Scoring Summary</h3>
-    <div id="departmentSummaryScoresContainer" style="margin-bottom: 25px;">
-      <p style="color: #6c757d;">No department checkpoints evaluated yet. Complete evaluations in Tab 4.</p>
-    </div>
-
-    <hr>
-
-    <h3>Final Recommendations</h3>
+    <h3>Recommendations</h3>
     <div class="row">
       <div class="col">
         <label>Final Recommendations & Action Steps</label>
@@ -467,7 +443,6 @@
 <script>
   let consultantsList = [];
   const kraScoresMap = {}; // Structure: { Department: { CheckpointID: true/false } }
-  let departmentKpaCounts = {}; // Stores total KPA counts per department
 
   window.addEventListener("DOMContentLoaded", () => {
     document.getElementById("assDate").valueAsDate = new Date();
@@ -505,10 +480,6 @@
     
     document.getElementById("step" + tabIndex).classList.add("active");
     document.getElementById("nav-step" + tabIndex).classList.add("active");
-
-    if (tabIndex === 5) {
-      calculateAndRenderDepartmentScores();
-    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -594,8 +565,6 @@
           return;
         }
 
-        departmentKpaCounts = {};
-
         let html = `
           <table class="score-table">
             <thead>
@@ -609,9 +578,6 @@
         `;
 
         data.checkpoints.forEach(cp => {
-          // Track total count of KPAs per department
-          departmentKpaCounts[cp.dept] = (departmentKpaCounts[cp.dept] || 0) + 1;
-
           const isChecked = (kraScoresMap[cp.dept] && kraScoresMap[cp.dept][cp.id] === true) ? "checked" : "";
 
           html += `
@@ -636,53 +602,6 @@
   function saveScore(dept, cpId, isChecked) {
     if (!kraScoresMap[dept]) kraScoresMap[dept] = {};
     kraScoresMap[dept][cpId] = isChecked;
-  }
-
-  /**
-   * Automatically calculates Tab 5 Department Scores out of 10 based on True/False counts
-   */
-  function calculateAndRenderDepartmentScores() {
-    const container = document.getElementById("departmentSummaryScoresContainer");
-    const checkedBoxes = document.querySelectorAll(".dept-checkbox:checked");
-    const selectedDepts = Array.from(checkedBoxes).map(cb => cb.value);
-
-    if (selectedDepts.length === 0) {
-      container.innerHTML = `<p style="color: #6c757d;">No departments selected in Tab 4.</p>`;
-      return;
-    }
-
-    let html = "";
-    selectedDepts.forEach(dept => {
-      const totalKpas = departmentKpaCounts[dept] || 0;
-      let achievedCount = 0;
-
-      if (kraScoresMap[dept]) {
-        Object.keys(kraScoresMap[dept]).forEach(cpId => {
-          if (kraScoresMap[dept][cpId] === true) {
-            achievedCount++;
-          }
-        });
-      }
-
-      const scoreOutOf10 = totalKpas > 0 ? ((achievedCount / totalKpas) * 10).toFixed(1) : "0.0";
-      const percentage = totalKpas > 0 ? Math.round((achievedCount / totalKpas) * 100) : 0;
-
-      html += `
-        <div class="dept-score-card">
-          <div>
-            <strong>${dept}</strong><br>
-            <span style="font-size: 13px; color: #555;">
-              ${achievedCount} of ${totalKpas} KPAs Implemented (${percentage}%)
-            </span>
-          </div>
-          <div class="dept-score-badge">
-            ${scoreOutOf10} / 10
-          </div>
-        </div>
-      `;
-    });
-
-    container.innerHTML = html;
   }
 
   function submitAssessment() {
